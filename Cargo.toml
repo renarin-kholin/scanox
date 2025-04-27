@@ -1,0 +1,28 @@
+[package]
+name = "scanox-backend"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.98"
+axum = { version = "0.8.3", features = ["tokio", "macros"] }
+clap = { version = "4.5.37", features = ["derive", "env"] }
+dotenv = "0.15.0"
+env_logger = "0.11.8"
+serde = "1.0.219"
+sqlx = { version="0.8.5", features = ["uuid", "runtime-async-std-native-tls", "postgres", "time"] }
+thiserror = "2.0.12"
+tokio = { version="1.44.2", features = ["macros", "rt-multi-thread"] }
+log = "0.4.27"
+tower = "0.5.2"
+tower-http = {version =  "0.6.2", features = ["trace"] }
+time = {version =  "0.3.41", features = ["formatting", "parsing", "serde"] }
+serde_json = "1.0.140"
+demoji = "0.0.3"
+reqwest = {version =  "0.12.15", features = ["json", "multipart"] }
+lopdf = "0.36.0"
+bytes = "1.10.1"
+qrcode-generator = "5.0.0"
+rand = "0.9.1"
+
+rsa = {version =  "0.9.8", features = ["sha2"] }
