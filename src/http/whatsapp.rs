@@ -144,9 +144,7 @@ struct InvoiceOrderDetails<'a> {
     document_id: &'a str,
     from_number: &'a str,
     user_name: &'a str,
-    is_both_side: bool,
     copies: i16,
-    is_color: bool,
     item: &'a str,
 
 }
@@ -232,8 +230,6 @@ async fn handle_text_message(ctx: Extension<ApiContext>,state: State<Arc<Whatsap
                     let razorpay_res = generate_invoice(InvoiceOrderDetails {
                         order_id: &order.order_id.to_string(),
                         item,
-                        is_color,
-                        is_both_side,
                         document_id: &order.document_id,
                         from_number: &order.from_number,
                         copies,

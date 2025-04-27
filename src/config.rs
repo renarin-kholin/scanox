@@ -19,5 +19,7 @@ pub struct Config {
     #[clap(long, env)]
     pub item_c_t: String,
     #[clap(long, env)]
-    pub webhook_secret: String
+    pub webhook_secret: String,
+    #[clap(long, env)]
+    pub port: String
 }
