@@ -1,8 +1,8 @@
 use anyhow::Context;
 use clap::Parser;
-use sqlx::postgres::PgPoolOptions;
 use scanox_backend::config::Config;
 use scanox_backend::http;
+use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

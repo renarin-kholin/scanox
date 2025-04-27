@@ -1,17 +1,15 @@
-
-
+use crate::http::whatsapp::{SendMessageType, send_message};
+use crate::http::{ApiContext, Error, Result};
 use anyhow::anyhow;
-use axum::{Extension, Router};
 use axum::routing::post;
+use axum::{Extension, Router};
 use qrcode_generator::QrCodeEcc;
 use reqwest::multipart;
 use serde::Deserialize;
-use serde_json::{json, Value};
-use crate::http::{ApiContext, Error, Result};
-use crate::http::whatsapp::{send_message, SendMessageType};
+use serde_json::{Value, json};
 
 pub fn router() -> Router {
-    Router::new().route("/webhook/razorpay",post(post_razorpay))
+    Router::new().route("/webhook/razorpay", post(post_razorpay))
 }
 #[derive(Deserialize)]
 struct RazorPayWebhookEventPayloadInvoiceEntity {
@@ -35,10 +33,10 @@ async fn generate_qrcode(hash: String) -> Result<Vec<u8>> {
     qrcode_generator::to_png_to_vec(hash, QrCodeEcc::Low, 1024).map_err(|_| Error::NotFound)
 }
 
-async fn hash_order(order_id: String,  _private_key_str: &str )-> Result<String>{
-   // Ok( json!({
-   //     "order_id": order_id,
-   // }).to_string())
+async fn hash_order(order_id: String, _private_key_str: &str) -> Result<String> {
+    // Ok( json!({
+    //     "order_id": order_id,
+    // }).to_string())
     Ok(order_id)
 }
 #[derive(Deserialize)]
@@ -59,21 +57,32 @@ async fn upload_image(image: Vec<u8>, razorpay_order_id: String, token: &str) ->
         .bearer_auth(token)
         .multipart(body)
         .send()
-        .await.map_err(|_| anyhow!("Could not upload image."))?;
+        .await
+        .map_err(|_| anyhow!("Could not upload image."))?;
 
-
-    let media_upload_response: MediaUploadResponse = res.json().await.map_err(|_| anyhow!("Could not deserialize media upload response."))?;
-    println!("{}",media_upload_response.id);
+    let media_upload_response: MediaUploadResponse = res
+        .json()
+        .await
+        .map_err(|_| anyhow!("Could not deserialize media upload response."))?;
+    println!("{}", media_upload_response.id);
     Ok(media_upload_response.id)
 }
-async fn post_razorpay(ctx: Extension<ApiContext>,  axum::extract::Json(payload): axum::extract::Json<Value>) -> Result<String> {
-    let razorpay_event: RazorPayWebhookEvent = serde_json::from_value(payload).map_err(|_| Error::unprocessable_entity([("Deserialize", "Invalid Request")]))?;
+async fn post_razorpay(
+    ctx: Extension<ApiContext>,
+    axum::extract::Json(payload): axum::extract::Json<Value>,
+) -> Result<String> {
+    let razorpay_event: RazorPayWebhookEvent = serde_json::from_value(payload)
+        .map_err(|_| Error::unprocessable_entity([("Deserialize", "Invalid Request")]))?;
     let razorpay_order_id = razorpay_event.payload.invoice.entity.order_id;
     let order = sqlx::query!(r#"update "order" set progress='READY', is_paid=true where razorpay_order_id = $1 returning from_number"#, razorpay_order_id).fetch_one(&ctx.db).await?;
     let hash = hash_order(razorpay_order_id.clone(), &ctx.config.private_key).await?;
     let qrcode = generate_qrcode(hash).await?;
     let media_id = upload_image(qrcode, razorpay_order_id, &ctx.config.whatsapp_token).await?;
-    send_message(order.from_number, SendMessageType::Image(json!({"id": media_id}).to_string()), &ctx.config.whatsapp_token).await?;
+    send_message(
+        order.from_number,
+        SendMessageType::Image(json!({"id": media_id}).to_string()),
+        &ctx.config.whatsapp_token,
+    )
+    .await?;
     Ok("OK".to_string())
-
 }

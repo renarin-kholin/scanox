@@ -1,16 +1,14 @@
-use std::fmt::Formatter;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{Error, Visitor};
-use time::format_description::well_known::Rfc3339;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt::Formatter;
 use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsContactProfileFb {
-
     pub name: String,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationContactFb {
-
     pub wa_id: String,
 
     pub user_id: Option<String>,
@@ -19,7 +17,6 @@ pub struct EventNotificationContactFb {
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationErrorsFb {
-
     pub code: i32,
 
     pub title: String,
@@ -32,20 +29,17 @@ pub mod event_notification_errors_fb {
 
     #[derive(Serialize, Deserialize, Clone)]
     pub struct ErrorData {
-
         pub details: String,
     }
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsButtonFb {
-
     pub payload: String,
 
     pub text: String,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsContextFb {
-
     pub forwarded: bool,
 
     pub frequently_forwarded: bool,
@@ -56,7 +50,6 @@ pub struct EventNotificationsContextFb {
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsDocumentFb {
-
     pub caption: Option<String>,
 
     pub filename: String,
@@ -69,7 +62,6 @@ pub struct EventNotificationsDocumentFb {
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsImageFb {
-
     pub caption: Option<String>,
 
     pub sha256: String,
@@ -80,14 +72,12 @@ pub struct EventNotificationsImageFb {
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsButtonReplyFb {
-
     pub id: String,
 
     pub title: String,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsListReplyFb {
-
     pub id: String,
 
     pub title: String,
@@ -96,24 +86,20 @@ pub struct EventNotificationsListReplyFb {
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsInteractiveTypeFb {
-
     pub button_reply: Option<EventNotificationsButtonReplyFb>,
 
     pub list_reply: Option<EventNotificationsListReplyFb>,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsInteractiveFb {
-
     pub r#type: Option<EventNotificationsInteractiveTypeFb>,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsTextFb {
-
     pub body: String,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsMessagesFb {
-
     pub from: String,
 
     pub id: String,
@@ -132,7 +118,6 @@ pub struct EventNotificationsMessagesFb {
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationValueFb {
-
     pub contacts: Vec<EventNotificationContactFb>,
 
     pub messaging_product: String,
@@ -159,7 +144,7 @@ pub struct EventNotificationFb {
 #[derive(sqlx::Type)]
 pub struct Timestamptz(pub OffsetDateTime);
 
-impl Serialize for Timestamptz{
+impl Serialize for Timestamptz {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -182,7 +167,9 @@ impl<'de> Deserialize<'de> for Timestamptz {
             where
                 E: Error,
             {
-                OffsetDateTime::parse(v, &Rfc3339).map(Timestamptz).map_err(E::custom)
+                OffsetDateTime::parse(v, &Rfc3339)
+                    .map(Timestamptz)
+                    .map_err(E::custom)
             }
         }
         deserializer.deserialize_str(StrVisitor)
@@ -194,16 +181,16 @@ pub enum ItemType {
     BW,
     BWT,
     C,
-    CT
+    CT,
 }
 
 impl ItemType {
     pub fn from(color: bool, both_side: bool) -> Self {
         match (color, both_side) {
-            (false, false) => Self::BW ,
+            (false, false) => Self::BW,
             (false, true) => Self::BWT,
             (true, false) => Self::C,
-            (true, true) => Self::CT
+            (true, true) => Self::CT,
         }
     }
 }

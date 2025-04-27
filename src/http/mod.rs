@@ -1,28 +1,28 @@
 mod error;
 mod orders;
-mod whatsapp;
-mod types;
 mod razorpay;
+mod types;
+mod whatsapp;
 
-use std::collections::HashMap;
-use std::sync::Arc;
+use crate::config::Config;
 use anyhow::Context;
 use axum::{Extension, Router};
-use sqlx::PgPool;
-use tower::ServiceBuilder;
 pub use error::{Error, ResultExt};
-use crate::config::Config;
+use sqlx::PgPool;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use types::ItemType;
 
-pub type Result<T, E=Error> = std::result::Result<T, E>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type UserNumer = String;
 
 #[derive(Clone)]
 struct ApiContext {
     config: Arc<Config>,
     db: PgPool,
-    razorpay_items: HashMap<ItemType, String>
+    razorpay_items: HashMap<ItemType, String>,
 }
 fn get_razorpay_items(config: &Config) -> HashMap<ItemType, String> {
     let mut items = HashMap::new();
@@ -31,7 +31,6 @@ fn get_razorpay_items(config: &Config) -> HashMap<ItemType, String> {
     items.insert(ItemType::C, config.item_c.clone());
     items.insert(ItemType::CT, config.item_c_t.clone());
     items
-
 }
 pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
     let items = get_razorpay_items(&config);
@@ -41,13 +40,15 @@ pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
             .layer(Extension(ApiContext {
                 config: Arc::new(config),
                 razorpay_items: items,
-                
-                db
+
+                db,
             }))
-            .layer(TraceLayer::new_for_http())
+            .layer(TraceLayer::new_for_http()),
     );
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
-    axum::serve(listener, app.into_make_service()).await.context("Error running http server")
+    axum::serve(listener, app.into_make_service())
+        .await
+        .context("Error running http server")
 }
 fn api_router() -> Router {
     whatsapp::router()
