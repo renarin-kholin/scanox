@@ -1,10 +1,6 @@
-use anyhow::anyhow;
-use axum::extract::Query;
 use axum::response::IntoResponse;
-use axum::routing::{get, post};
+use axum::routing::get;
 use axum::{Extension, Router};
-use bytes::Bytes;
-use std::collections::HashMap;
 
 use crate::http::whatsapp::get_document;
 use crate::http::{ApiContext, Result};

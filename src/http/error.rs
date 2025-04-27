@@ -1,12 +1,9 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::hash::Hash;
-use axum::body::Body;
 use axum::http::header::WWW_AUTHENTICATE;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::Json;
 use axum::response::{IntoResponse, Response};
-use log::log;
 use sqlx::error::DatabaseError;
 
 #[derive(thiserror::Error, Debug)]

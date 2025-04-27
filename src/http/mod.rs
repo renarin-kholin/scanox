@@ -46,7 +46,7 @@ pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
             }))
             .layer(TraceLayer::new_for_http())
     );
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await?;;
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await?;
     axum::serve(listener, app.into_make_service()).await.context("Error running http server")
 }
 fn api_router() -> Router {

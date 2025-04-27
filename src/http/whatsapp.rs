@@ -40,8 +40,8 @@ impl TextMessage {
 
 type ImageMessageStr = String;
 pub enum SendMessageType<'a> {
-    TEXT(&'a str),
-    IMAGE(ImageMessageStr)
+    Text(&'a str),
+    Image(ImageMessageStr)
 }
 #[derive(Debug, sqlx::Type)]
 #[sqlx(type_name="order_progress", rename_all="UPPERCASE")]
@@ -84,11 +84,11 @@ pub async fn send_message(to: String, message_type: SendMessageType<'_>, token: 
     body.insert("to", &to);
     body.insert("recipient_type", "individual");
     match message_type {
-        SendMessageType::TEXT( text) => {
+        SendMessageType::Text(text) => {
             body.insert("type", "text");
             body.insert("text", text);
         }
-        SendMessageType::IMAGE(ref image) => {
+        SendMessageType::Image(ref image) => {
             body.insert("type", "image");
             body.insert("image", image);
         }
@@ -195,7 +195,7 @@ async fn handle_document_message(ctx: Extension<ApiContext>,state: State<Arc<Wha
         ).fetch_one(&ctx.db).await?;
         let mut uo = state.user_order.lock().await;
         uo.insert(from.clone(), order_id);
-         send_message(from.clone(), SendMessageType::TEXT(&TextMessage::from("Starting a new print order, Please enter the number of copies you want.").as_string()?), &ctx.config.whatsapp_token).await
+         send_message(from.clone(), SendMessageType::Text(&TextMessage::from("Starting a new print order, Please enter the number of copies you want.").as_string()?), &ctx.config.whatsapp_token).await
 
     } else {
          Err(Error::unprocessable_entity([("file type", "document uploaded is not pdf.")]))
@@ -212,11 +212,11 @@ async fn handle_text_message(ctx: Extension<ApiContext>,state: State<Arc<Whatsap
             OrderProgress::Started => {
                 let copies = text.parse::<u16>();
                 if copies.is_err() {
-                    send_message(from.clone(), SendMessageType::TEXT(&TextMessage::from("That is not a valid number. Proceeding with 1 copies.").as_string()?), &ctx.config.whatsapp_token).await?;
+                    send_message(from.clone(), SendMessageType::Text(&TextMessage::from("That is not a valid number. Proceeding with 1 copies.").as_string()?), &ctx.config.whatsapp_token).await?;
                 }
                 if let Ok(copies) = copies {
                     sqlx::query_scalar!(r#"update "order" set copies = $1, progress='COPIES' where order_id = $2"#, copies as i32, order_id).fetch_optional(&ctx.db).await?;
-                    send_message(from, SendMessageType::TEXT(&TextMessage::from("Do you want both side print? Answer Yes or No").as_string()?), &ctx.config.whatsapp_token).await?;
+                    send_message(from, SendMessageType::Text(&TextMessage::from("Do you want both side print? Answer Yes or No").as_string()?), &ctx.config.whatsapp_token).await?;
                 }
             }
             OrderProgress::Copies => {
@@ -225,7 +225,7 @@ async fn handle_text_message(ctx: Extension<ApiContext>,state: State<Arc<Whatsap
                     is_both_side = true;
                 }
                 let order = sqlx::query!(r#"update "order" set is_both_side = $1, progress='PAYMENT' where order_id = $2 returning from_number, copies, is_both_side, document_id, is_color, order_id"#, is_both_side, order_id).fetch_one(&ctx.db).await?;
-                send_message(from.clone(), SendMessageType::TEXT(&TextMessage::from("Generating payment link, please wait.").as_string()?), &ctx.config.whatsapp_token).await?;
+                send_message(from.clone(), SendMessageType::Text(&TextMessage::from("Generating payment link, please wait.").as_string()?), &ctx.config.whatsapp_token).await?;
                 if let(Some(is_color), Some(is_both_side), Some(copies)) = (order.is_color, order.is_both_side, order.copies) {
                     let item_type = ItemType::from(is_color, is_both_side);
                     let item = ctx.razorpay_items.get(&item_type).ok_or(Error::NotFound)?;
@@ -243,7 +243,7 @@ async fn handle_text_message(ctx: Extension<ApiContext>,state: State<Arc<Whatsap
                         razorpay_key_secret: &ctx.config.razorpay_key_secret
                     }, &ctx.config.whatsapp_token).await?;
                     sqlx::query!(r#"update "order" set razorpay_order_id = $1 where order_id = $2"#, razorpay_res.order_id, order_id).fetch_optional(&ctx.db).await?;
-                    send_message(from, SendMessageType::TEXT(&TextMessage::from(razorpay_res.short_url.as_str()).as_string()?), &ctx.config.whatsapp_token).await?;
+                    send_message(from, SendMessageType::Text(&TextMessage::from(razorpay_res.short_url.as_str()).as_string()?), &ctx.config.whatsapp_token).await?;
 
                 }
 
