@@ -26,3 +26,5 @@ qrcode-generator = "5.0.0"
 rand = "0.9.1"
 
 rsa = {version =  "0.9.8", features = ["sha2"] }
+aes-gcm = "0.10.3"
+base64 = "0.22.1"

@@ -1,12 +1,22 @@
+use std::str::from_utf8;
 use crate::http::whatsapp::{SendMessageType, send_message};
 use crate::http::{ApiContext, Error, Result};
+use aes_gcm::aead::consts::U12;
+use aes_gcm::aead::{Aead, OsRng};
+use aes_gcm::aes::Aes256;
+use aes_gcm::{AeadCore, Aes256Gcm, AesGcm, Key, Nonce};
 use anyhow::anyhow;
 use axum::routing::post;
 use axum::{Extension, Router};
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 use qrcode_generator::QrCodeEcc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
 use reqwest::multipart;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use tokio::time::Instant;
 
 pub fn router() -> Router {
     Router::new().route("/webhook/razorpay", post(post_razorpay))
@@ -32,12 +42,53 @@ struct RazorPayWebhookEvent {
 async fn generate_qrcode(hash: String) -> Result<Vec<u8>> {
     qrcode_generator::to_png_to_vec(hash, QrCodeEcc::Low, 1024).map_err(|_| Error::NotFound)
 }
-
-async fn hash_order(order_id: String, _private_key_str: &str) -> Result<String> {
+#[derive(Serialize, Deserialize)]
+pub struct QRPayloadData {
+    pub created_at: SystemTime,
+    pub razorpay_order_id: String,
+}
+#[derive(Serialize, Deserialize)]
+pub struct QRPayload {
+    pub hash: String,
+    pub nonce: String,
+}
+async fn encrypt_order(order_id: String, cipher: &AesGcm<Aes256, U12>) -> Result<String> {
     // Ok( json!({
     //     "order_id": order_id,
     // }).to_string())
-    Ok(order_id)
+    let current_time = SystemTime::now();
+    let payload_data = QRPayloadData {
+        created_at: current_time,
+        razorpay_order_id: order_id,
+    };
+    let payload_data_str = serde_json::to_string(&payload_data)
+        .map_err(|_| anyhow!("Could not serialize payload to string"))?;
+
+    let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
+    let nonce_encoded = BASE64_STANDARD.encode(nonce);
+
+    let ciphertext = cipher
+        .encrypt(&nonce, payload_data_str.as_bytes())
+        .map_err(|_| anyhow!("Could not encrypt QR payload"))?;
+    let ciphertext_encoded = BASE64_STANDARD.encode(ciphertext);
+    let qr_payload = QRPayload {
+        hash: ciphertext_encoded,
+        nonce: nonce_encoded,
+    };
+    let qr_payload_str = serde_json::to_string(&qr_payload)
+        .map_err(|_| anyhow!("Could not convert payload to string"))?;
+    Ok(qr_payload_str)
+}
+pub async fn decrypt_order(cipher: &AesGcm<Aes256, U12>, encrypted_message: String) -> Result<QRPayloadData> {
+    let qr_payload: QRPayload = serde_json::from_str(&encrypted_message).map_err(|_| anyhow!("Encrypted message is not in valid format."))?;
+    let nonce = BASE64_STANDARD.decode(qr_payload.nonce).map_err(|_| anyhow!("Could not decode nonce"))?;
+    let hash = BASE64_STANDARD.decode(qr_payload.hash).map_err(|_| anyhow!("could not decode hash"))?;
+
+    let nonce = Nonce::from_slice(&nonce);
+    let decrypted = cipher.decrypt(&nonce, hash.as_ref()).map_err(|_| anyhow!("Could not decrypt hash"))?;
+    let payload_data_str = from_utf8(&decrypted).map_err(|_| anyhow!("Could not decode utf8 string"))?;
+    let payload_data: QRPayloadData = serde_json::from_str(&payload_data_str).map_err(|_| anyhow!("Could not parse JSON for QR payload" ))?;
+    Ok(payload_data)
 }
 #[derive(Deserialize)]
 struct MediaUploadResponse {
@@ -75,9 +126,10 @@ async fn post_razorpay(
         .map_err(|_| Error::unprocessable_entity([("Deserialize", "Invalid Request")]))?;
     let razorpay_order_id = razorpay_event.payload.invoice.entity.order_id;
     let order = sqlx::query!(r#"update "order" set progress='READY', is_paid=true where razorpay_order_id = $1 returning from_number"#, razorpay_order_id).fetch_one(&ctx.db).await?;
-    let hash = hash_order(razorpay_order_id.clone(), &ctx.config.private_key).await?;
-    let qrcode = generate_qrcode(hash).await?;
-    let media_id = upload_image(qrcode, razorpay_order_id, &ctx.config.whatsapp_token).await?;
+    let hash = encrypt_order(razorpay_order_id.clone(), &ctx.cipher).await?;
+    println!("generated hash: {}", hash);
+    let qrcode = generate_qrcode(hash.clone()).await?;
+    let media_id = upload_image(qrcode, hash, &ctx.config.whatsapp_token).await?;
     send_message(
         order.from_number,
         SendMessageType::Image(json!({"id": media_id}).to_string()),

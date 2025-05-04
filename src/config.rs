@@ -3,7 +3,7 @@ pub struct Config {
     #[clap(long, env)]
     pub database_url: String,
     #[clap(long, env)]
-    pub private_key: String,
+    pub aes_key: String,
     #[clap(long, env)]
     pub whatsapp_token: String,
     #[clap(long, env)]
@@ -20,6 +20,8 @@ pub struct Config {
     pub item_c_t: String,
     #[clap(long, env)]
     pub webhook_secret: String,
+    #[clap(long, env)]
+    pub client_secret: String,
     #[clap(long, env)]
     pub port: String,
 }
