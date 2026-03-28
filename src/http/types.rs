@@ -1,5 +1,6 @@
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::Value;
 use std::fmt::Formatter;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
@@ -91,8 +92,21 @@ pub struct EventNotificationsInteractiveTypeFb {
     pub list_reply: Option<EventNotificationsListReplyFb>,
 }
 #[derive(Serialize, Deserialize, Clone)]
+pub struct EventNotificationsInteractiveReplyPayloadFb {
+    pub color: String,
+    pub side: String,
+    pub copies: String,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct EventNotificationInteractiveReplyFb {
+    pub response_json: String,
+    pub body: String,
+    pub name: String,
+}
+#[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsInteractiveFb {
-    pub r#type: Option<EventNotificationsInteractiveTypeFb>,
+    pub r#type: String,
+    pub nfm_reply: EventNotificationInteractiveReplyFb,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationsTextFb {
@@ -115,14 +129,28 @@ pub struct EventNotificationsMessagesFb {
     pub text: Option<EventNotificationsTextFb>,
 
     pub document: Option<EventNotificationsDocumentFb>,
+
+    pub context: Option<Value>,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct EventNotificationsStatusPaymentFb {
+    pub id: String,
+    pub status: String,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct EventNotificationsStatusesFb {
+    pub status: String,
+    pub recipient_id: String,
+    pub r#type: String,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationValueFb {
-    pub contacts: Vec<EventNotificationContactFb>,
+    pub contacts: Option<Vec<EventNotificationContactFb>>,
 
     pub messaging_product: String,
 
-    pub messages: Vec<EventNotificationsMessagesFb>,
+    pub messages: Option<Vec<EventNotificationsMessagesFb>>,
+    pub statuses: Option<Vec<EventNotificationsStatusesFb>>,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EventNotificationChangesFb {

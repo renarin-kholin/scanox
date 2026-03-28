@@ -13,6 +13,7 @@ use axum::{Extension, Router};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 pub use error::{Error, ResultExt};
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -27,15 +28,44 @@ pub type UserNumer = String;
 struct ApiContext {
     config: Arc<Config>,
     db: PgPool,
-    razorpay_items: HashMap<ItemType, String>,
+    razorpay_items: HashMap<ItemType, RazorpayItem>,
     cipher: AesGcm<Aes256, U12>,
 }
-fn get_razorpay_items(config: &Config) -> HashMap<ItemType, String> {
+#[derive(Clone, Serialize, Deserialize)]
+pub struct RazorpayItem {
+    name: String,
+    price: i32,
+}
+fn get_razorpay_items(config: &Config) -> HashMap<ItemType, RazorpayItem> {
     let mut items = HashMap::new();
-    items.insert(ItemType::BW, config.item_bw.clone());
-    items.insert(ItemType::BWT, config.item_bw_t.clone());
-    items.insert(ItemType::C, config.item_c.clone());
-    items.insert(ItemType::CT, config.item_c_t.clone());
+    items.insert(
+        ItemType::BW,
+        RazorpayItem {
+            name: "Black and White".to_string(),
+            price: 100,
+        },
+    );
+    items.insert(
+        ItemType::BWT,
+        RazorpayItem {
+            name: "Black and White Two Sided".to_string(),
+            price: 200,
+        },
+    );
+    items.insert(
+        ItemType::C,
+        RazorpayItem {
+            name: "Color".to_string(),
+            price: 500,
+        },
+    );
+    items.insert(
+        ItemType::CT,
+        RazorpayItem {
+            name: "Color Two Sided".to_string(),
+            price: 1000,
+        },
+    );
     items
 }
 fn load_aes_key(config: &Config) -> Key<Aes256Gcm> {

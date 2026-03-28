@@ -1,4 +1,3 @@
-use std::str::from_utf8;
 use crate::http::whatsapp::{SendMessageType, send_message};
 use crate::http::{ApiContext, Error, Result};
 use aes_gcm::aead::consts::U12;
@@ -11,6 +10,7 @@ use axum::{Extension, Router};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use qrcode_generator::QrCodeEcc;
+use std::str::from_utf8;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use reqwest::multipart;
@@ -39,27 +39,27 @@ struct RazorPayWebhookEvent {
     // event: String,
     payload: RazorPayWebhookEventPayload,
 }
-async fn generate_qrcode(hash: String) -> Result<Vec<u8>> {
+pub async fn generate_qrcode(hash: String) -> Result<Vec<u8>> {
     qrcode_generator::to_png_to_vec(hash, QrCodeEcc::Low, 1024).map_err(|_| Error::NotFound)
 }
 #[derive(Serialize, Deserialize)]
 pub struct QRPayloadData {
     pub created_at: SystemTime,
-    pub razorpay_order_id: String,
+    pub order_id: String,
 }
 #[derive(Serialize, Deserialize)]
 pub struct QRPayload {
     pub hash: String,
     pub nonce: String,
 }
-async fn encrypt_order(order_id: String, cipher: &AesGcm<Aes256, U12>) -> Result<String> {
+pub async fn encrypt_order(order_id: String, cipher: &AesGcm<Aes256, U12>) -> Result<String> {
     // Ok( json!({
     //     "order_id": order_id,
     // }).to_string())
     let current_time = SystemTime::now();
     let payload_data = QRPayloadData {
         created_at: current_time,
-        razorpay_order_id: order_id,
+        order_id,
     };
     let payload_data_str = serde_json::to_string(&payload_data)
         .map_err(|_| anyhow!("Could not serialize payload to string"))?;
@@ -79,22 +79,38 @@ async fn encrypt_order(order_id: String, cipher: &AesGcm<Aes256, U12>) -> Result
         .map_err(|_| anyhow!("Could not convert payload to string"))?;
     Ok(qr_payload_str)
 }
-pub async fn decrypt_order(cipher: &AesGcm<Aes256, U12>, encrypted_message: String) -> Result<QRPayloadData> {
-    let qr_payload: QRPayload = serde_json::from_str(&encrypted_message).map_err(|_| anyhow!("Encrypted message is not in valid format."))?;
-    let nonce = BASE64_STANDARD.decode(qr_payload.nonce).map_err(|_| anyhow!("Could not decode nonce"))?;
-    let hash = BASE64_STANDARD.decode(qr_payload.hash).map_err(|_| anyhow!("could not decode hash"))?;
+pub async fn decrypt_order(
+    cipher: &AesGcm<Aes256, U12>,
+    encrypted_message: String,
+) -> Result<QRPayloadData> {
+    let qr_payload: QRPayload = serde_json::from_str(&encrypted_message)
+        .map_err(|_| anyhow!("Encrypted message is not in valid format."))?;
+    let nonce = BASE64_STANDARD
+        .decode(qr_payload.nonce)
+        .map_err(|_| anyhow!("Could not decode nonce"))?;
+    let hash = BASE64_STANDARD
+        .decode(qr_payload.hash)
+        .map_err(|_| anyhow!("could not decode hash"))?;
 
     let nonce = Nonce::from_slice(&nonce);
-    let decrypted = cipher.decrypt(&nonce, hash.as_ref()).map_err(|_| anyhow!("Could not decrypt hash"))?;
-    let payload_data_str = from_utf8(&decrypted).map_err(|_| anyhow!("Could not decode utf8 string"))?;
-    let payload_data: QRPayloadData = serde_json::from_str(&payload_data_str).map_err(|_| anyhow!("Could not parse JSON for QR payload" ))?;
+    let decrypted = cipher
+        .decrypt(&nonce, hash.as_ref())
+        .map_err(|_| anyhow!("Could not decrypt hash"))?;
+    let payload_data_str =
+        from_utf8(&decrypted).map_err(|_| anyhow!("Could not decode utf8 string"))?;
+    let payload_data: QRPayloadData = serde_json::from_str(&payload_data_str)
+        .map_err(|_| anyhow!("Could not parse JSON for QR payload"))?;
     Ok(payload_data)
 }
 #[derive(Deserialize)]
 struct MediaUploadResponse {
     id: String,
 }
-async fn upload_image(image: Vec<u8>, razorpay_order_id: String, token: &str) -> Result<String> {
+pub(crate) async fn upload_image(
+    image: Vec<u8>,
+    razorpay_order_id: String,
+    token: &str,
+) -> Result<String> {
     let client = reqwest::Client::new();
     let part = multipart::Part::bytes(image)
         .file_name(format!("{}.png", razorpay_order_id))
