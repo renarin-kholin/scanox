@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select is_received, is_paid, order_id, copies, is_color, is_both_side from \"order\" where order_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "is_received",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 1,
+        "name": "is_paid",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "order_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "copies",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 4,
+        "name": "is_color",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "is_both_side",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "6b705b9c37cdecca99f33ca36da1f7428c0dc7570c629bc35676a276c12f700c"
+}

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "update \"order\" set progress='READY', is_paid=true where razorpay_order_id = $1 returning from_number",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "from_number",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a7ecea4c5aac06b69b37896eef77da805ce60cf6b6a21823831f85df2db414a5"
+}

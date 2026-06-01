@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select document_id, is_received, is_paid from \"order\" where order_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "document_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "is_received",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "is_paid",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "138625c5e03e0ca6e1f740edcb7e1bd2279a3f64831218f5a343c52c12b379d4"
+}

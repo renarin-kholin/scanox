@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "update \"order\" set progress='READY', is_paid=true where order_id = $1 returning from_number",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "from_number",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0c23c06b5b1d6fd5554e6ed9965ac8a1df38b1d64adbd2d99563fbfefc5f8190"
+}

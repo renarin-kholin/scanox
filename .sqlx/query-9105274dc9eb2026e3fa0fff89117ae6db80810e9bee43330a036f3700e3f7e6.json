@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "update \"order\" set progress='DONE', is_received=true where order_id = $1 returning is_received",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "is_received",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "9105274dc9eb2026e3fa0fff89117ae6db80810e9bee43330a036f3700e3f7e6"
+}
