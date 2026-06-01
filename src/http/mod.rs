@@ -80,6 +80,7 @@ pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
     let aes_key = load_aes_key(&config);
     let cipher = Aes256Gcm::new(&aes_key);
     let port = config.port.clone();
+    let bind_address = config.bind_address.clone();
     let app = api_router().layer(
         ServiceBuilder::new()
             .layer(Extension(ApiContext {
@@ -90,7 +91,7 @@ pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
             }))
             .layer(TraceLayer::new_for_http()),
     );
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
+    let listener = tokio::net::TcpListener::bind(format!("{}:{}", bind_address, port)).await?;
     axum::serve(listener, app.into_make_service())
         .await
         .context("Error running http server")

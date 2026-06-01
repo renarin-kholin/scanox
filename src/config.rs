@@ -24,4 +24,6 @@ pub struct Config {
     pub client_secret: String,
     #[clap(long, env)]
     pub port: String,
+    #[clap(long, env)]
+    pub bind_address: String,
 }
